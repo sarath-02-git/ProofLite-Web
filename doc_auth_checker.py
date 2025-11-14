@@ -12,20 +12,42 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # --- Helper functions (metadata + text) ---
 def similar(a, b):
-    # return a similarity score between two strings
-    ...
+    """Return similarity ratio between two strings."""
+    return SequenceMatcher(None, a, b).ratio()
 
 def get_filesystem_metadata(file_path):
-    # use os.stat() to get created / modified timestamps
-    ...
+    """Extract filesystem created/modified timestamps."""
+    stat = os.stat(file_path)
+    try:
+        created = datetime.datetime.fromtimestamp(stat.st_birthtime)
+    except AttributeError:
+        created = datetime.datetime.fromtimestamp(stat.st_ctime)
+    modified = datetime.datetime.fromtimestamp(stat.st_mtime)
+    return created, modified
 
 def get_docx_metadata(file_path):
-    # open .docx with Document() and read core_properties
-    ...
+    """Extract Word metadata: author, created, modified, language."""
+    try:
+        doc = Document(file_path)
+        prop = doc.core_properties
+        metadata = {
+            "author": prop.author,
+            "created": prop.created,
+            "modified": prop.modified,
+            "language": prop.language,
+        }
+        return metadata
+    except PackageNotFoundError:
+        return None
 
 def read_file_content(file_path):
-    # open .docx and join all paragraph texts
-    ...
+    """Read document paragraphs and return as single string."""
+    try:
+        doc = Document(file_path)
+        full_text = [para.text for para in doc.paragraphs]
+        return '\n'.join(full_text)
+    except PackageNotFoundError:
+        return None
 
 # --- Similarity engine ---
 def compare_documents(directory, main_file_path):
